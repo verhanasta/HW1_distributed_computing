@@ -30,8 +30,12 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/inventory.yml \
+          cd ansible  # Переходим в папку с ansible.cfg
+          ansible-playbook -i inventory.yml \
             --extra-vars "domain=$DOMAIN email=$EMAIL" \
-            ansible/playbooks/site.yml
+            playbooks/site.yml
         env:
-          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_WP_PASSWORD: ${{ secrets.MYSQL_WP_PASSWORD }}

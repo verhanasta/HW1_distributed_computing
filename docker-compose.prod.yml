@@ -5,12 +5,17 @@ services:
     image: mysql:5.7
     env_file: .env
     volumes:
-      - db_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wpuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     networks:
       - wp-network
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
 
   wordpress:
     image: wordpress:${WP_VERSION}-fpm

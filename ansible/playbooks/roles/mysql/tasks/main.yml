@@ -1,3 +1,10 @@
+- name: Ensure WordPress directory exists
+  file:
+    path: /opt/wordpress
+    state: directory
+    mode: 0755
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
 - name: Create MySQL environment file
   copy:
     content: |

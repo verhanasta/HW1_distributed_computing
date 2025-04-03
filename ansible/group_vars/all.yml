@@ -8,3 +8,8 @@ letsencrypt_dir: "/etc/letsencrypt/live/{{ domain }}"
 # Несекретные настройки MySQL
 mysql_database: wordpress
 mysql_user: wpuser
+mysql_data_dir: /opt/wordpress/mysql_data
+
+# System User
+deploy_user: "{{ deploy_user | default('deploy') }}"
+

@@ -35,6 +35,9 @@
     src: .env.j2
     dest: /opt/wordpress/.env
     mode: 0600
+  vars:
+    mysql_root_password: "{{ mysql_root_password }}"
+    mysql_wp_password: "{{ mysql_wp_password }}"
 
 - name: Deploy docker-compose.yml
   template:
@@ -47,13 +50,13 @@
     project_src: /opt/wordpress
     pull: always
 
-- name: Start containers
+- name: Start containers with environment
   community.docker.docker_compose_v2:
     project_src: /opt/wordpress
-    build: no
+    env_file: .env
     state: present
     recreate: always
-    remove_orphans: yes
+    pull: missing
 
 - name: Verify services
   command: docker compose -f /opt/wordpress/docker-compose.yml ps

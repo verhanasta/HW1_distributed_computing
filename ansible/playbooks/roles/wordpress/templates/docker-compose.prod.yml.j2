@@ -1,14 +1,18 @@
+version: '3.8'
+
 services:
   db:
     image: mysql:5.7
-    env_file: .env
-    volumes:
-      - mysql_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
       MYSQL_USER: ${MYSQL_USER:-wpuser}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - wp-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -20,12 +24,22 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: .env
-    ports:
-      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wpuser}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
     volumes:
       - wp_data:/var/www/html
+    ports:
+      - "80:80"
+    networks:
+      - wp-network
+    restart: unless-stopped
 
 volumes:
   mysql_data:
   wp_data:
+
+networks:
+  wp-network:

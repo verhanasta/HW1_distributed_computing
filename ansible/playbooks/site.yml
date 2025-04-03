@@ -1,0 +1,30 @@
+---
+- name: Deploy WordPress Stack
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Ensure secrets are available
+      assert:
+        that:
+          - lookup('env', 'MYSQL_ROOT_PASSWORD') != ''
+          - lookup('env', 'MYSQL_WP_PASSWORD') != ''
+        fail_msg: "MySQL passwords not set in environment!"
+
+  roles:
+    - role: nginx
+      tags: nginx
+    - role: mysql
+      tags: mysql
+    - role: wordpress
+      tags: wordpress
+
+  post_tasks:
+    - name: Verify Docker containers
+      command: docker ps
+      register: docker_ps
+      changed_when: false
+
+    - name: Display running containers
+      debug:
+        var: docker_ps.stdout_lines

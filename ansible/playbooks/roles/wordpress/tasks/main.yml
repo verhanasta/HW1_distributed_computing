@@ -53,7 +53,11 @@
 - name: Start containers with environment
   community.docker.docker_compose_v2:
     project_src: /opt/wordpress
-    env_file: .env
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+      MYSQL_PASSWORD: "{{ mysql_wp_password }}"
+      MYSQL_USER: "{{ mysql_user | default('wpuser') }}"
+      MYSQL_DATABASE: "{{ mysql_database | default('wordpress') }}"
     state: present
     recreate: always
     pull: missing

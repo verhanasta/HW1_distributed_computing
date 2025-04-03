@@ -1,0 +1,8 @@
+- name: Create .env file for Docker
+  template:
+    src: templates/env.j2
+    dest: /opt/wordpress/.env
+    mode: 0600
+  vars:
+    mysql_root_password: "{{ lookup('env', 'MYSQL_ROOT_PASSWORD') }}"
+    mysql_wp_password: "{{ lookup('env', 'MYSQL_WP_PASSWORD') }}"

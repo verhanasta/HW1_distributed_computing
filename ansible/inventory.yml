@@ -1,0 +1,5 @@
+all:
+  hosts:
+    wordpress_prod:
+      ansible_host: "{{ lookup('env', 'SERVER_IP') }}"
+      ansible_user: "{{ lookup('env', 'DEPLOY_USER') }}"

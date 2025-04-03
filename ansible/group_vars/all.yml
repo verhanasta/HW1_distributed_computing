@@ -1,0 +1,10 @@
+# Docker
+docker_compose_version: "1.29.2"
+wp_version: "6.4"
+
+# Пути
+letsencrypt_dir: "/etc/letsencrypt/live/{{ domain }}"
+
+# Несекретные настройки MySQL
+mysql_database: wordpress
+mysql_user: wpuser

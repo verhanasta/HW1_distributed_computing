@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:5.7
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+    networks:
+      - wp-network
+
+  wordpress:
+    image: wordpress:${WP_VERSION}-fpm
+    env_file: .env
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - wp-network
+
+  nginx:
+    image: nginx:1.21-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ${LETSENCRYPT_DIR}:/etc/letsencrypt
+    networks:
+      - wp-network
+
+volumes:
+  db_data:
+  wp_data:
+
+networks:
+  wp-network:

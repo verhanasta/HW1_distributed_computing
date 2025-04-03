@@ -1,0 +1,39 @@
+---
+- name: Ensure deployment directory exists
+  file:
+    path: /opt/wordpress
+    state: directory
+    mode: 0755
+
+- name: Deploy .env file
+  template:
+    src: .env.j2
+    dest: /opt/wordpress/.env
+    mode: 0600
+
+- name: Deploy docker-compose.prod.yml
+  template:
+    src: docker-compose.prod.yml.j2
+    dest: /opt/wordpress/docker-compose.yml
+    mode: 0644
+
+- name: Pull Docker images
+  community.docker.docker_compose:
+    project_src: /opt/wordpress
+    pull: yes
+
+- name: Start containers
+  community.docker.docker_compose:
+    project_src: /opt/wordpress
+    state: present
+    recreate: always
+    restart: yes
+
+- name: Verify services
+  command: docker-compose -f /opt/wordpress/docker-compose.yml ps
+  register: services_status
+  changed_when: false
+
+- name: Show services status
+  debug:
+    var: services_status.stdout_lines

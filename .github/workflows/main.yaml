@@ -28,13 +28,20 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
-      - name: Run Ansible Playbook
+      - name: Run Ansible
         run: |
-          cd ansible  # Переходим в папку с ansible.cfg
+          cd ansible
           ansible-playbook -i inventory.yml \
-            --extra-vars "domain=$DOMAIN email=$EMAIL" \
+            --extra-vars "server_ip=$SERVER_IP \
+                          deploy_user=$DEPLOY_USER \
+                          domain=$DOMAIN \
+                          email=$EMAIL \
+                          mysql_root_password=$MYSQL_ROOT_PASSWORD \
+                          mysql_wp_password=$MYSQL_WP_PASSWORD" \
             playbooks/site.yml
         env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DOMAIN: ${{ secrets.DOMAIN }}
           EMAIL: ${{ secrets.ADMIN_EMAIL }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}

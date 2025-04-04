@@ -38,8 +38,8 @@ jobs:
       - name: 🕵️ Проверка SSH
         run: ssh -o StrictHostKeyChecking=no verhanasta@51.250.9.118 "echo '✅ SSH работает!'"
 
-      - name: 🚀 Run Ansible Playbook
-        run: ssh verhanasta@51.250.9.118 "cd ~/project && ansible-playbook -i ansible/inventory.ini ansible/deploy.yml"
+      - name: 🚀 Запуск Ansible playbook с конфигом
+        run: ssh verhanasta@51.250.9.118 "cd ~/project && ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/deploy.yml"
 
       - name: 🧪 Проверка доступности сайта
         run: |

@@ -1,0 +1,46 @@
+---
+- name: Deploy WordPress Stack
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure directories exist
+      file:
+        path: /opt/wordpress
+        state: directory
+        mode: 0755
+
+    - name: Deploy .env file
+      template:
+        src: ../../docker/templates/.env.j2
+        dest: /opt/wordpress/.env
+        mode: 0600
+
+    - name: Deploy docker-compose.yml
+      template:
+        src: ../../docker/templates/docker-compose.j2
+        dest: /opt/wordpress/docker-compose.yml
+        mode: 0644
+
+    - name: Install Docker Compose plugin
+      command: |
+        mkdir -p /usr/local/lib/docker/cli-plugins && \
+        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+          -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+      when: not ansible_facts.docker_compose_installed
+
+    - name: Start containers
+      community.docker.docker_compose:
+        project_src: /opt/wordpress
+        state: present
+        pull: yes
+        recreate: always
+
+    - name: Verify services
+      command: docker compose -f /opt/wordpress/docker-compose.yml ps
+      register: services
+      changed_when: false
+
+    - name: Display services status
+      debug:
+        var: services.stdout_lines

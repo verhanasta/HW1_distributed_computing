@@ -28,4 +28,4 @@ jobs:
 
       - name: Run Ansible to start containers
         run: |
-          ansible-playbook playbook.yml
+          ansible-playbook playbook.yml --inventory inventory.ini

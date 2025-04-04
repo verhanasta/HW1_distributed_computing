@@ -32,7 +32,7 @@ jobs:
         run: ssh verhanasta@51.250.9.118 "command -v ansible-playbook || (sudo apt update && sudo apt install -y ansible)"
 
       - name: 🚀 Run Ansible Playbook
-        run: ssh verhanasta@51.250.9.118 "cd ~/project && ansible-playbook -i inventory.ini deploy.yml"
+        run: ssh verhanasta@51.250.9.118 "cd ~/project && ansible-playbook -i ansible/inventory.ini ansible/deploy.yml"
 
       - name: 🧪 Проверка доступности сайта
         run: |

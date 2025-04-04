@@ -58,9 +58,11 @@ jobs:
         run: |
           # Ждем 30 секунд, чтобы контейнеры успели подняться
           sleep 30
-          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://${{ secrets.SSH_HOST }}:8080)
+          # Используем флаг -L для следования за редиректами
+          STATUS=$(curl -L -s -o /dev/null -w '%{http_code}' http://${{ secrets.SSH_HOST }}:8080)
           echo "HTTP Status Code: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Сайт недоступен или работает некорректно."
             exit 1
           fi
+      

@@ -1,15 +1,11 @@
-# Docker
-docker_compose_version: "1.29.2"
-wp_version: "6.4"
+# Общие настройки
+server_ip: "your_server_ip"  # Переопределяется через --extra-vars
+ssh_user: "deploy"
 
-# Пути
-letsencrypt_dir: "/etc/letsencrypt/live/{{ domain }}"
+# Настройки MySQL
+mysql_database: "wordpress"
+mysql_user: "wpuser"
 
-# Несекретные настройки MySQL
-mysql_database: wordpress
-mysql_user: wpuser
-mysql_data_dir: /opt/wordpress/mysql_data
-
-# System User
-deploy_user: "{{ deploy_user | default('deploy') }}"
+# Настройки WordPress
+wp_port: 80
 

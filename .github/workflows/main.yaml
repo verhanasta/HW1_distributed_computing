@@ -10,45 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: 📥 Клонирование репозитория
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-
-      - name: Install Ansible and dependencies
-        run: |
-          pip install ansible docker
-          ansible-galaxy collection install community.docker
-
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add host to known_hosts
+      - name: 🔑 Установка SSH-ключа
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 51.250.9.118 >> ~/.ssh/known_hosts
 
-      - name: Run playbook
+      - name: 🐍 Установка Python и Ansible
         run: |
-          ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+          sudo apt update
+          sudo apt install -y python3 python3-pip
+          pip3 install ansible
 
-      - name: Wait for containers to start and verify site
+      - name: 🧹 Удаление всех контейнеров перед деплоем
         run: |
-          echo "⏳ Ждём 30 секунд, чтобы сервисы успели подняться..."
-          sleep 30
-          
-          echo "🌐 Проверяем доступность сайта https://51.250.9.118.sslip.io ..."
-          STATUS=$(curl -L -k -s -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io)
+          ssh ubuntu@51.250.9.118 << 'EOF'
+            echo "🧹 Удаляем все существующие контейнеры..."
+            docker rm -f $(docker ps -aq) 2>/dev/null || true
+
+            echo "🧼 Чистим неиспользуемые Docker-сети..."
+            docker network prune -f
+          EOF
+
+      - name: 🚀 Запуск деплоя через Ansible
+        run: |
+          ssh ubuntu@51.250.9.118 "ansible-playbook -i ~/inventory.ini ~/deploy.yml"
+
+      - name: ⏳ Ожидание запуска сервисов
+        run: sleep 30
+
+      - name: 🌐 Проверка доступности сайта
+        run: |
+          STATUS=$(curl -L -k -s -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io:8443)
           echo "HTTP Status Code: $STATUS"
-          
+
           if [ "$STATUS" != "200" ]; then
             echo "❌ Сайт недоступен или работает некорректно."
             exit 1
           fi
-          
+
           echo "✅ Сайт доступен и работает корректно."

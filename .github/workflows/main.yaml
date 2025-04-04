@@ -1,48 +1,67 @@
-name: Production Deploy
+name: Deploy WordPress and MySQL Containers
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DOMAIN: ${{ secrets.DOMAIN }}
-      EMAIL: ${{ secrets.ADMIN_EMAIL }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Setup Ansible
+      # Загружаем SSH ключ в ssh-agent
+      - name: Set up SSH Agent
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Сохраняем SSH ключ в файл, чтобы Ansible мог его использовать
+      - name: Save SSH key to file
         run: |
-          sudo apt update
-          sudo apt install -y ansible python3-pip
-          pip3 install docker
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_rsa
+          chmod 600 id_rsa
 
-      - name: Configure SSH Access
+      # Добавляем удалённый хост в known_hosts, чтобы избежать ошибки проверки ключа
+      - name: Add remote host to known_hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Run Ansible
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Ansible and community.docker collection
         run: |
-          cd ansible
-          ansible-playbook -i inventory.yml \
-            --extra-vars "server_ip=$SERVER_IP \
-                          deploy_user=$DEPLOY_USER \
-                          domain=$DOMAIN \
-                          email=$EMAIL \
-                          mysql_root_password=$MYSQL_ROOT_PASSWORD \
-                          mysql_wp_password=$MYSQL_WP_PASSWORD" \
-            playbooks/site.yml
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DOMAIN: ${{ secrets.DOMAIN }}
-          EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_WP_PASSWORD: ${{ secrets.MYSQL_WP_PASSWORD }}
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      # Создаём инвентори-файл с указанием удалённого хоста и пользователя
+      - name: Create inventory file
+        run: |
+          echo "[production]" > inventory.ini
+          echo "${{ secrets.SSH_HOST }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
+
+      # Запускаем Ansible playbook
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i inventory.ini deploy.yml
+
+      # Добавляем шаг проверки доступности сайта
+      - name: Check website status
+        run: |
+          # Ждем 30 секунд, чтобы контейнеры успели подняться
+          sleep 30
+          # Используем флаг -L для следования за редиректами
+          STATUS=$(curl -L -s -o /dev/null -w '%{http_code}' http://${{ secrets.SSH_HOST }}:8080)
+          echo "HTTP Status Code: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Сайт недоступен или работает некорректно."
+            exit 1
+          fi

@@ -29,7 +29,7 @@ jobs:
       - name: Add remote host to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -48,6 +48,19 @@ jobs:
           echo "[production]" > inventory.ini
           echo "${{ secrets.SSH_HOST }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
 
+      # Запускаем Ansible playbook
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i inventory.ini deploy.yml
+
+      # Добавляем шаг проверки доступности сайта
+      - name: Check website status
+        run: |
+          # Ждем 30 секунд, чтобы контейнеры успели подняться
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://${{ secrets.SSH_HOST }}:8080)
+          echo "HTTP Status Code: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Сайт недоступен или работает некорректно."
+            exit 1
+          fi

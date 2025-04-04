@@ -28,6 +28,8 @@ jobs:
         run: |
           cd ansible
           ansible-playbook -i inventory.yml playbooks/deploy.yml \
-            --extra-vars "mysql_root_password=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+            --extra-vars "server_ip=${{ secrets.SERVER_IP }} \
+                  ssh_user=${{ secrets.SSH_USER }} \
+                  mysql_root_password=${{ secrets.MYSQL_ROOT_PASSWORD }} \
                   mysql_wp_password=${{ secrets.MYSQL_WP_PASSWORD }}" \
             -vv

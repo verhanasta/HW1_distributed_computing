@@ -21,20 +21,31 @@
         dest: /opt/wordpress/docker-compose.yml
         mode: 0644
 
-    - name: Install Docker Compose plugin
-      command: |
-        mkdir -p /usr/local/lib/docker/cli-plugins && \
-        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-          -o /usr/local/lib/docker/cli-plugins/docker-compose && \
-        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-      when: not ansible_facts.docker_compose_installed
+    - name: Install Docker Compose v2
+      block:
+        - name: Check if Docker Compose v2 is installed
+          command: docker compose version
+          register: compose_check
+          ignore_errors: yes
+          changed_when: false
 
-    - name: Start containers
-      community.docker.docker_compose:
+        - name: Install Docker Compose plugin
+          become: yes
+          ansible.builtin.get_url:
+            url: "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-{{ ansible_architecture }}"
+            dest: /usr/libexec/docker/cli-plugins/docker-compose
+            mode: '0755'
+          when: compose_check.rc != 0
+
+    - name: Start containers with Docker Compose v2
+      community.docker.docker_compose_v2:
         project_src: /opt/wordpress
         state: present
-        pull: yes
+        pull: true
         recreate: always
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+          MYSQL_PASSWORD: "{{ mysql_wp_password }}"
 
     - name: Verify services
       command: docker compose -f /opt/wordpress/docker-compose.yml ps

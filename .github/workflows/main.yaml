@@ -19,8 +19,10 @@ jobs:
 
       - name: 🔄 Force update known_hosts
         run: |
-          ssh-keygen -R 51.250.9.118 || true
-          ssh-keyscan 51.250.9.118 >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          ssh-keygen -R 51.250.9.118 -f ~/.ssh/known_hosts || true
+          ssh-keyscan -H 51.250.9.118 >> ~/.ssh/known_hosts
+          cat ~/.ssh/known_hosts
 
       - name: 📦 Copy Project to Server
         run: |
@@ -32,6 +34,9 @@ jobs:
 
       - name: 🧰 Install Ansible (if not installed)
         run: ssh verhanasta@51.250.9.118 "command -v ansible-playbook || (sudo apt update && sudo apt install -y ansible)"
+
+      - name: 🕵️ Проверка SSH
+        run: ssh -o StrictHostKeyChecking=no verhanasta@51.250.9.118 "echo '✅ SSH работает!'"
 
       - name: 🚀 Run Ansible Playbook
         run: ssh verhanasta@51.250.9.118 "cd ~/project && ansible-playbook -i ansible/inventory.ini ansible/deploy.yml"

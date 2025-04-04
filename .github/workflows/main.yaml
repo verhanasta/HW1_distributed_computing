@@ -17,6 +17,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: 📌 Add server to known_hosts
+        run: ssh-keyscan 51.250.9.118 >> ~/.ssh/known_hosts
+
       - name: 📦 Copy Project to Server
         run: |
           ssh verhanasta@51.250.9.118 "rm -rf ~/project"

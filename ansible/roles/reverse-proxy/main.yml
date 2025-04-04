@@ -1,0 +1,35 @@
+- name: Create Docker network
+  community.docker.docker_network:
+    name: nginx-proxy
+    driver: bridge
+
+- name: Start nginx-proxy container
+  community.docker.docker_container:
+    name: nginx-proxy
+    image: jwilder/nginx-proxy
+    restart_policy: always
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /etc/nginx/certs:/etc/nginx/certs:ro
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
+    networks:
+      - name: nginx-proxy
+
+- name: Start Let's Encrypt companion
+  community.docker.docker_container:
+    name: nginx-proxy-acme
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart_policy: always
+    environment:
+      - DEFAULT_EMAIL={{ email }}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/nginx/certs:/etc/nginx/certs
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
+    networks:
+      - name: nginx-proxy

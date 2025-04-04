@@ -1,68 +1,54 @@
-name: Deploy WordPress and MySQL Containers
+name: Deploy WordPress
 
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-
-      # Загружаем SSH ключ в ssh-agent
-      - name: Set up SSH Agent
-        uses: webfactory/ssh-agent@v0.5.4
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      # Сохраняем SSH ключ в файл, чтобы Ansible мог его использовать
-      - name: Save SSH key to file
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_rsa
-          chmod 600 id_rsa
-
-      # Добавляем удалённый хост в known_hosts, чтобы избежать ошибки проверки ключа
-      - name: Add remote host to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: 3.x
 
-      - name: Install Ansible and community.docker collection
+      - name: Install Ansible and dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install ansible
+          pip install ansible docker
           ansible-galaxy collection install community.docker
 
-      # Создаём инвентори-файл с указанием удалённого хоста и пользователя
-      - name: Create inventory file
-        run: |
-          echo "[production]" > inventory.ini
-          echo "${{ secrets.SSH_HOST }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Запускаем Ansible playbook
-      - name: Run Ansible Playbook
+      - name: Add host to known_hosts
         run: |
-          ansible-playbook -i inventory.ini deploy.yml
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 51.250.9.118 >> ~/.ssh/known_hosts
 
-      # Добавляем шаг проверки доступности сайта
-      - name: Check website status
+      - name: Run playbook
         run: |
-          # Ждем 30 секунд, чтобы контейнеры успели подняться
-          sleep 60
-          # Используем флаг -L для следования за редиректами
-          STATUS=$(curl -L -s -o /dev/null -w '%{http_code}' https://{{ domain }})
+          ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+
+      - name: Wait for containers to start and verify site
+        run: |
+          echo "⏳ Ждём 30 секунд, чтобы сервисы успели подняться..."
+          sleep 30
+          
+          echo "🌐 Проверяем доступность сайта https://51.250.9.118.sslip.io ..."
+          STATUS=$(curl -L -k -s -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io)
           echo "HTTP Status Code: $STATUS"
+          
           if [ "$STATUS" != "200" ]; then
-            echo "Сайт недоступен или работает некорректно."
+            echo "❌ Сайт недоступен или работает некорректно."
             exit 1
           fi
-      
+          
+          echo "✅ Сайт доступен и работает корректно."

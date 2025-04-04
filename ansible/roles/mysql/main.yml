@@ -1,0 +1,17 @@
+- name: Run MySQL container
+  community.docker.docker_container:
+    name: mysql
+    image: mysql:5.7
+    restart_policy: always
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+      MYSQL_DATABASE: "{{ wordpress_db_name }}"
+      MYSQL_USER: "{{ wordpress_db_user }}"
+      MYSQL_PASSWORD: "{{ wordpress_db_password }}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - name: nginx-proxy
+
+  volumes:
+    - name: mysql_data

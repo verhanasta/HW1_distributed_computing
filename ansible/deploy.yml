@@ -1,0 +1,8 @@
+- name: Deploy WordPress with MySQL and reverse proxy
+  hosts: production
+  become: yes
+
+  roles:
+    - reverse-proxy
+    - mysql
+    - wordpress

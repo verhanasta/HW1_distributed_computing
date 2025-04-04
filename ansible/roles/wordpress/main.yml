@@ -1,0 +1,17 @@
+- name: Run WordPress container
+  community.docker.docker_container:
+    name: wordpress
+    image: wordpress:latest
+    restart_policy: always
+    env:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: "{{ wordpress_db_name }}"
+      WORDPRESS_DB_USER: "{{ wordpress_db_user }}"
+      WORDPRESS_DB_PASSWORD: "{{ wordpress_db_password }}"
+      VIRTUAL_HOST: "{{ domain }}"
+      LETSENCRYPT_HOST: "{{ domain }}"
+      LETSENCRYPT_EMAIL: "{{ email }}"
+    networks:
+      - name: nginx-proxy
+    depends_on:
+      - mysql

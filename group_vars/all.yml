@@ -1,8 +1,0 @@
-ip_address: "51.250.9.118"
-domain: "{{ ip_address }}.nip.io"
-email: "verhanasta@yandex.ru"
-
-mysql_root_password: example
-mysql_user: wordpress
-mysql_password: wordpress
-mysql_database: wordpress

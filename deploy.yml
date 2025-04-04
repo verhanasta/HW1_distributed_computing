@@ -1,24 +1,21 @@
 - hosts: production
   become: yes
   vars_files:
-    - group_vars/all.yml
+    - ../group_vars/all.yml
 
   tasks:
-
-    - name: Free port 80 if occupied
-      shell: |
-        PID=$(lsof -ti :80) && [ -n "$PID" ] && kill -9 $PID || true
-      ignore_errors: true
-
-    - name: Free port 443 if occupied
-      shell: |
-        PID=$(lsof -ti :443) && [ -n "$PID" ] && kill -9 $PID || true
-      ignore_errors: true
 
     - name: Create Docker network for reverse proxy
       community.docker.docker_network:
         name: nginx-proxy
         driver: bridge
+
+    - name: Free ports 80 and 443 if occupied
+      shell: |
+        for port in 80 443; do
+          PID=$(lsof -ti :$port) && [ -n "$PID" ] && kill -9 $PID || true
+        done
+      ignore_errors: true
 
     - name: Start nginx-proxy container
       community.docker.docker_container:
@@ -29,21 +26,18 @@
           - "80:80"
           - "443:443"
         volumes:
-          - /etc/nginx/certs:/etc/nginx/certs
+          - /etc/nginx/certs:/etc/nginx/certs:ro
           - /etc/nginx/vhost.d:/etc/nginx/vhost.d
           - /usr/share/nginx/html:/usr/share/nginx/html
           - /var/run/docker.sock:/tmp/docker.sock:ro
         networks:
           - name: nginx-proxy
 
-    - name: Start Let's Encrypt companion
+    - name: Start Let's Encrypt companion container
       community.docker.docker_container:
         name: nginx-letsencrypt
         image: jrcs/letsencrypt-nginx-proxy-companion
         restart_policy: always
-        env:
-          NGINX_PROXY_CONTAINER: nginx-proxy
-          DEFAULT_EMAIL: "{{ email }}"
         volumes:
           - /etc/nginx/certs:/etc/nginx/certs
           - /etc/nginx/vhost.d:/etc/nginx/vhost.d
@@ -51,6 +45,9 @@
           - /var/run/docker.sock:/var/run/docker.sock:ro
         networks:
           - name: nginx-proxy
+        env:
+          NGINX_PROXY_CONTAINER: nginx-proxy
+          DEFAULT_EMAIL: "{{ email }}"
 
     - name: Start MySQL container
       community.docker.docker_container:
@@ -65,7 +62,7 @@
         networks:
           - name: nginx-proxy
 
-    - name: Start WordPress container with HTTPS
+    - name: Start WordPress container
       community.docker.docker_container:
         name: wordpress
         image: wordpress:latest

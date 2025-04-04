@@ -17,11 +17,11 @@
         done
       ignore_errors: true
 
-    - name: Force remove old nginx-proxy container (if exists)
-      docker_container:
-        name: nginx-proxy
-        state: absent
-        force_kill: yes
+    - name: Try to kill and remove nginx-proxy by shell (fallback method)
+      shell: |
+        docker kill nginx-proxy || true
+        docker rm -f nginx-proxy || true
+      ignore_errors: yes
 
     - name: Start nginx-proxy container
       community.docker.docker_container:

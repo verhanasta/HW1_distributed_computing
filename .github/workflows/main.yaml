@@ -3,7 +3,7 @@ name: Deploy WordPress
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   deploy:
@@ -20,11 +20,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 51.250.9.118 >> ~/.ssh/known_hosts
 
-      - name: 🐍 Установка Python и Ansible
+      - name: 🛠️ Установка Ansible на сервере
         run: |
-          sudo apt update
-          sudo apt install -y python3 python3-pip
-          pip3 install ansible
+          ssh verhanasta@51.250.9.118 << 'EOF'
+            sudo apt update
+            sudo apt install -y ansible
+          EOF
 
       - name: 🧹 Удаление всех контейнеров перед деплоем
         run: |

@@ -1,4 +1,4 @@
-name: Deploy WordPress and MySQL Containers
+name: Production Deploy
 
 on:
   push:

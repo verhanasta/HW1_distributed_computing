@@ -1,48 +1,31 @@
-name: Production Deploy
+name: Simple Deploy
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  deploy-containers:
     runs-on: ubuntu-latest
-    env:
-      DOMAIN: ${{ secrets.DOMAIN }}
-      EMAIL: ${{ secrets.ADMIN_EMAIL }}
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible python3-pip
-          pip3 install docker
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-      - name: Configure SSH Access
+      - name: Install Ansible
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          pip install ansible docker
 
-      - name: Run Ansible
+      - name: Configure SSH Agent
+        uses: webfactory/ssh-agent@v0.6.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Run Ansible to start containers
         run: |
-          cd ansible
-          ansible-playbook -i inventory.yml \
-            --extra-vars "server_ip=$SERVER_IP \
-                          deploy_user=$DEPLOY_USER \
-                          domain=$DOMAIN \
-                          email=$EMAIL \
-                          mysql_root_password=$MYSQL_ROOT_PASSWORD \
-                          mysql_wp_password=$MYSQL_WP_PASSWORD" \
-            playbooks/site.yml
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DOMAIN: ${{ secrets.DOMAIN }}
-          EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_WP_PASSWORD: ${{ secrets.MYSQL_WP_PASSWORD }}
+          ansible-playbook playbook.yml

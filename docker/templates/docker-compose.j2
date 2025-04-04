@@ -12,7 +12,7 @@ services:
       - wp_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -u${MYSQL_USER} -p${MYSQL_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 3

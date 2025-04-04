@@ -1,4 +1,4 @@
-domain: "51.250.9.118.nip.io"
+domain: "51.250.9.118.sslip.io"
 email: verhanasta@yandex.ru
 
 mysql_root_password: example

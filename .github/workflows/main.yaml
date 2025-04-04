@@ -59,7 +59,7 @@ jobs:
           # Ждем 30 секунд, чтобы контейнеры успели подняться
           sleep 30
           # Используем флаг -L для следования за редиректами
-          STATUS=$(curl -L -s -o /dev/null -w '%{http_code}' https://51.250.9.118.nip.io)
+          STATUS=$(curl -L -s -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io)
           echo "HTTP Status Code: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Сайт недоступен или работает некорректно."

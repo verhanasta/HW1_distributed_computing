@@ -1,57 +1,45 @@
-name: Deploy WordPress
+name: 🚀 Deploy to Server
 
 on:
   push:
-    branches:
-      - develop
+    branches: [ develop ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Клонирование репозитория
-        uses: actions/checkout@v4
+      - name: 🧾 Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: 🔑 Установка SSH-ключа
+      - name: 🔐 Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 📦 Copy Project to Server
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 51.250.9.118 >> ~/.ssh/known_hosts
+          ssh verhanasta@51.250.9.118 "rm -rf ~/project"
+          scp -r ./ verhanasta@51.250.9.118:~/project
 
-      - name: 🛠️ Установка Ansible на сервере
+      - name: 🧼 Clean Up Old Containers
+        run: ssh verhanasta@51.250.9.118 "docker rm -f \$(docker ps -aq) || true"
+
+      - name: 🧰 Install Ansible (if not installed)
+        run: ssh verhanasta@51.250.9.118 "command -v ansible-playbook || (sudo apt update && sudo apt install -y ansible)"
+
+      - name: 🚀 Run Ansible Playbook
+        run: ssh verhanasta@51.250.9.118 "cd ~/project && ansible-playbook -i inventory.ini deploy.yml"
+
+      - name: 🧪 Проверка доступности сайта
         run: |
-          ssh verhanasta@51.250.9.118 << 'EOF'
-            sudo apt update
-            sudo apt install -y ansible
-          EOF
-
-      - name: 🧹 Удаление всех контейнеров перед деплоем
-        run: |
-          ssh verhanasta@51.250.9.118 << 'EOF'
-            echo "🧹 Удаляем все существующие контейнеры..."
-            docker rm -f $(docker ps -aq) 2>/dev/null || true
-
-            echo "🧼 Чистим неиспользуемые Docker-сети..."
-            docker network prune -f
-          EOF
-
-      - name: 🚀 Запуск деплоя через Ansible
-        run: |
-          ssh verhanasta@51.250.9.118 "ansible-playbook -i ~/project/inventory.ini ~/project/deploy.yml"
-
-      - name: ⏳ Ожидание запуска сервисов
-        run: sleep 30
-
-      - name: 🌐 Проверка доступности сайта
-        run: |
-          STATUS=$(curl -L -k -s -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io:8443)
+          echo "⏳ Ждём 30 секунд, чтобы сервисы успели подняться..."
+          sleep 30
+          echo "🌐 Проверяем https://51.250.9.118.sslip.io ..."
+          STATUS=$(curl -L -s -k -o /dev/null -w '%{http_code}' https://51.250.9.118.sslip.io)
           echo "HTTP Status Code: $STATUS"
-
           if [ "$STATUS" != "200" ]; then
             echo "❌ Сайт недоступен или работает некорректно."
             exit 1
           fi
-
           echo "✅ Сайт доступен и работает корректно."

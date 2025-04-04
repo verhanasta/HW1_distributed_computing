@@ -39,7 +39,7 @@ jobs:
 
       - name: 🚀 Запуск деплоя через Ansible
         run: |
-          ssh verhanasta@51.250.9.118 "ansible-playbook -i ~/inventory.ini ~/deploy.yml"
+          ssh verhanasta@51.250.9.118 "ansible-playbook -i ~/inventory.ini ~ansible/deploy.yml"
 
       - name: ⏳ Ожидание запуска сервисов
         run: sleep 30

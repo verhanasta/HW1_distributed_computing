@@ -1,4 +1,4 @@
-name: Simple Deploy
+name: Deploy WordPress and MySQL Containers
 
 on:
   push:
@@ -6,26 +6,42 @@ on:
       - develop
 
 jobs:
-  deploy-containers:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      # Загружаем SSH ключ в ssh-agent
+      - name: Set up SSH Agent
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Сохраняем SSH ключ в файл, чтобы Ansible мог его использовать (если требуется)
+      - name: Save SSH key to file
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_rsa
+          chmod 600 id_rsa
+
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install Ansible
+      - name: Install Ansible and community.docker collection
         run: |
-          pip install ansible docker
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker
 
-      - name: Configure SSH Agent
-        uses: webfactory/ssh-agent@v0.6.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Run Ansible to start containers
+      # Создаём инвентори-файл с указанием удалённого хоста и пользователя
+      - name: Create inventory file
         run: |
-          ansible-playbook playbook.yml --inventory inventory.ini
+          echo "[production]" > inventory.ini
+          echo "${{ secrets.SERVER_IP }} ansible_user=${{ secrets.DEPLOY_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i inventory.ini deploy.yml

@@ -19,11 +19,17 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Сохраняем SSH ключ в файл, чтобы Ansible мог его использовать (если требуется)
+      # Сохраняем SSH ключ в файл, чтобы Ansible мог его использовать
       - name: Save SSH key to file
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > id_rsa
           chmod 600 id_rsa
+
+      # Добавляем удалённый хост в known_hosts, чтобы избежать ошибки проверки ключа
+      - name: Add remote host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -40,7 +46,7 @@ jobs:
       - name: Create inventory file
         run: |
           echo "[production]" > inventory.ini
-          echo "${{ secrets.SERVER_IP }} ansible_user=${{ secrets.DEPLOY_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
+          echo "${{ secrets.SSH_HOST }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=${{ github.workspace }}/id_rsa" >> inventory.ini
 
       - name: Run Ansible Playbook
         run: |

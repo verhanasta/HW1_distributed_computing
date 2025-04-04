@@ -1,4 +1,4 @@
-name: Production Deploy
+name: Deploy WordPress Stack
 
 on:
   workflow_dispatch:
@@ -8,41 +8,25 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DOMAIN: ${{ secrets.DOMAIN }}
-      EMAIL: ${{ secrets.ADMIN_EMAIL }}
-
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Setup Ansible
         run: |
           sudo apt update
           sudo apt install -y ansible python3-pip
           pip3 install docker
-
-      - name: Configure SSH Access
+          
+      - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-
-      - name: Run Ansible
+          
+      - name: Run Ansible Playbook
         run: |
           cd ansible
-          ansible-playbook -i inventory.yml \
-            --extra-vars "server_ip=$SERVER_IP \
-                          deploy_user=$DEPLOY_USER \
-                          domain=$DOMAIN \
-                          email=$EMAIL \
-                          mysql_root_password=$MYSQL_ROOT_PASSWORD \
-                          mysql_wp_password=$MYSQL_WP_PASSWORD" \
-            playbooks/site.yml
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DOMAIN: ${{ secrets.DOMAIN }}
-          EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_WP_PASSWORD: ${{ secrets.MYSQL_WP_PASSWORD }}
+          ansible-playbook -i inventory.yml playbooks/deploy.yml \
+            --extra-vars "mysql_root_password=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+                        mysql_wp_password=${{ secrets.MYSQL_WP_PASSWORD }}"

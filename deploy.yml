@@ -5,6 +5,16 @@
 
   tasks:
 
+    - name: Free port 80 if occupied
+      shell: |
+        PID=$(lsof -ti :80) && [ -n "$PID" ] && kill -9 $PID || true
+      ignore_errors: true
+
+    - name: Free port 443 if occupied
+      shell: |
+        PID=$(lsof -ti :443) && [ -n "$PID" ] && kill -9 $PID || true
+      ignore_errors: true
+
     - name: Create Docker network for reverse proxy
       community.docker.docker_network:
         name: nginx-proxy

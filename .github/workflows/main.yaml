@@ -29,4 +29,5 @@ jobs:
           cd ansible
           ansible-playbook -i inventory.yml playbooks/deploy.yml \
             --extra-vars "mysql_root_password=${{ secrets.MYSQL_ROOT_PASSWORD }} \
-                        mysql_wp_password=${{ secrets.MYSQL_WP_PASSWORD }}"
+                  mysql_wp_password=${{ secrets.MYSQL_WP_PASSWORD }}" \
+            -vv

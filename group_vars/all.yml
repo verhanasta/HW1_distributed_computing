@@ -1,4 +1,4 @@
-domain: "yandex.cloud"
+domain: "51.250.9.118.nip.io"
 email: verhanasta@yandex.ru
 
 mysql_root_password: example

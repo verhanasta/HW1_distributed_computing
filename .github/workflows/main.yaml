@@ -36,10 +36,20 @@ jobs:
         run: ssh verhanasta@51.250.9.118 "command -v ansible-playbook || (sudo apt update && sudo apt install -y ansible)"
 
       - name: 🕵️ Проверка SSH
-        run: ssh -o StrictHostKeyChecking=no verhanasta@51.250.9.118 "echo '✅ SSH работает!'"
+        run: ssh -A -o StrictHostKeyChecking=no verhanasta@51.250.9.118 "echo '✅ SSH работает от $(whoami)'"
 
-      - name: 🚀 Запуск Ansible playbook с конфигом
-        run: ssh verhanasta@51.250.9.118 "cd ~/project && ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/deploy.yml"
+      - name: 🚀 Запуск Ansible playbook с конфигом (debug + agent forwarding)
+        run: |
+          echo "🧾 Проверка: какие SSH-ключи добавлены в агент?"
+          ssh-add -l || echo "❌ Ключи не найдены в ssh-agent"
+
+          echo "🚀 Подключение к серверу и запуск playbook..."
+          ssh -A -o StrictHostKeyChecking=no verhanasta@51.250.9.118 "
+            echo '👤 Пользователь на сервере: ' \$(whoami)
+            cd ~/project && \
+            ANSIBLE_CONFIG=ansible/ansible.cfg \
+            ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+          "
 
       - name: 🧪 Проверка доступности сайта
         run: |

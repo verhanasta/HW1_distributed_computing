@@ -1,0 +1,7 @@
+domain: "yandex.cloud"
+email: verhanasta@yandex.ru
+
+mysql_root_password: example
+mysql_user: wordpress
+mysql_password: wordpress
+mysql_database: wordpress
